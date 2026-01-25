@@ -33,3 +33,7 @@ Network Traffic Visualization and Analysis Tool
       1. ```django-admin startproject <project_name> <(opt="duplicate of the project name")directory_name>```
    3. Django Development Server
       1. ```python manage.py runserver```
+   4. Creating and App inside Django Project
+      1. ```python manage.py startapp <app_name>```
+   5. Creating a View
+      1. ```./<app_name>/views.py```
