@@ -23,3 +23,13 @@ Network Traffic Visualization and Analysis Tool
       1. Captured Data and uploaded files are sandboxed per user.
       2. Each user's PCAP uploads and analysis results are kept seperate and encrypted at rest.
 ## 
+
+
+### Resources
+1. [Writing your first Django App Tutorial](https://docs.djangoproject.com/en/6.0/intro/tutorial01/)
+   1. Testing to see if django was installed correctly
+      1. ```python -m django --version```
+   2. Creating a project
+      1. ```django-admin startproject <project_name> <(opt="duplicate of the project name")directory_name>```
+   3. Django Development Server
+      1. ```python manage.py runserver```

@@ -1,5 +1,2 @@
-﻿################################################################################
-# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
-################################################################################
-
-/.vs
+﻿TrafficLensFrontend/TrafficLens/__pycache__/
+TrafficLensFrontend/db.sqlite3
