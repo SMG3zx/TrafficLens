@@ -1,32 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "main/base_auth.html" %}
+{% block title %}Register{% endblock %}
 
-<p>Register Page</p>
+{% block content %}
+<h1>Create account</h1>
 
 {% if messages %}
 <ul class="messages">
   {% for message in messages %}
-    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+    <li class="{{ message.tags }}">{{ message }}</li>
   {% endfor %}
 </ul>
 {% endif %}
 
 <form method="post">
-    {% csrf_token %}
-    {{ form }}
-
-    <input type="submit" value="Submit">
-
-
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Register</button>
 </form>
 
-<p>To login: <a href="{% url 'login' %}">Click Here</a></p>
-
-
-</body>
-</html>
+<p class="muted">
+  Already have an account? <a href="{% url 'login' %}">Login</a>
+</p>
+{% endblock %}
