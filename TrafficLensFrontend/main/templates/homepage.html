@@ -14,8 +14,10 @@
 <p>If you try to go back to login page, you will be redirected here</p>
 <p>Try to go to <a href={% url 'login' %}>Login</a></p>
 
-<p>To Logout:
-    <a href={% url 'logout' %}> Click here</a></p>
+<form method="post" action="{% url 'logout' %}">
+    {% csrf_token %}
+    <button type="submit">Logout</button>
+</form>
 
 
 </body>

@@ -13,7 +13,7 @@ urlpatterns = [
          ),
 
     # logout view from auth_view
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
 
     # path for register view
     path('register/', views.register, name='register'),
