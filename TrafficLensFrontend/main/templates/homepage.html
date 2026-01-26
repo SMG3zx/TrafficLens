@@ -1,24 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>HomePage</title>
+  <meta charset="UTF-8" />
+  <title>Dashboard</title>
+  <style>
+    body { margin: 0; font-family: system-ui, Arial, sans-serif; }
+    .app { display: flex; height: 100vh; }
+    .sidebar {
+      width: 260px;
+      background: #0f172a;
+      color: white;
+      padding: 16px;
+      box-sizing: border-box;
+    }
+    .sidebar h2 { margin: 0 0 16px; font-size: 18px; }
+    .nav a {
+      display: block;
+      color: #cbd5e1;
+      text-decoration: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+    }
+    .nav a:hover { background: rgba(255,255,255,0.08); color: white; }
+
+    .content {
+      flex: 1;
+      background: #0b1020;
+      color: white;
+      padding: 24px;
+      box-sizing: border-box;
+      overflow: auto;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 900px;
+    }
+
+    .messages { list-style: none; padding: 0; }
+    .messages li { margin: 8px 0; padding: 10px 12px; border-radius: 8px; }
+    .messages li.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); }
+    .messages li.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); }
+
+    .row { display: flex; gap: 16px; flex-wrap: wrap; }
+    .btn {
+      background: #2563eb; color: white; border: 0;
+      padding: 10px 14px; border-radius: 10px; cursor: pointer;
+    }
+    .btn:hover { filter: brightness(1.08); }
+
+    .table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .table th, .table td { text-align: left; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .muted { color: #94a3b8; }
+  </style>
 </head>
+
 <body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>TrafficLens</h2>
 
-<h1>
-    This is the Homepage
-</h1>
+    <div class="nav">
+      <a href="{% url 'homepage' %}">Dashboard</a>
+      <a href="#">PCAP Uploads</a>
+      <a href="#">Analysis</a>
+      <a href="#">Settings</a>
+    </div>
 
-<p>If you can see this, means you are already login</p>
-<p>If you try to go back to login page, you will be redirected here</p>
-<p>Try to go to <a href={% url 'login' %}>Login</a></p>
+    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.12); margin: 16px 0;" />
 
-<form method="post" action="{% url 'logout' %}">
-    {% csrf_token %}
-    <button type="submit">Logout</button>
-</form>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button class="btn" type="submit" style="width:100%;">Logout</button>
+    </form>
 
+    <p class="muted" style="margin-top: 12px;">Logged in as {{ request.user.username }}</p>
+  </aside>
 
+  <!-- Main content -->
+  <main class="content">
+    <h1 style="margin-top:0;">Welcome</h1>
+    <p class="muted">Upload a PCAP to start analyzing traffic.</p>
+
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}
+          <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+
+    <div class="card">
+      <h2 style="margin-top:0;">Upload PCAP</h2>
+
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="btn" type="submit">Upload</button>
+      </form>
+
+      {% if form.errors %}
+        <p class="muted">Fix the errors above and try again.</p>
+      {% endif %}
+    </div>
+
+    <div class="card" style="margin-top:16px;">
+      <h2 style="margin-top:0;">Recent uploads</h2>
+
+      {% if uploads %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>File</th>
+              <th>Uploaded</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for u in uploads %}
+            <tr>
+              <td>{{ u.file.name }}</td>
+              <td class="muted">{{ u.uploaded_at }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">No uploads yet.</p>
+      {% endif %}
+    </div>
+  </main>
+</div>
 </body>
 </html>
