@@ -1,3 +1,5 @@
 ﻿TrafficLensFrontend/TrafficLens/__pycache__/
 TrafficLensFrontend/db.sqlite3
 TrafficLensFrontend/main/__pycache__/
+TrafficLensFrontend/main/migrations/
+TrafficLensFrontend/.env

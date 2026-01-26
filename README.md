@@ -22,7 +22,7 @@ Network Traffic Visualization and Analysis Tool
    5. Per-User Data Sandboxing
       1. Captured Data and uploaded files are sandboxed per user.
       2. Each user's PCAP uploads and analysis results are kept seperate and encrypted at rest.
-## 
+### Models
 
 
 ### Resources
@@ -37,3 +37,8 @@ Network Traffic Visualization and Analysis Tool
       1. ```python manage.py startapp <app_name>```
    5. Creating a View
       1. ```./<app_name>/views.py```
+   6. Migrations
+      1. ```python manage.py makemigrations <app_name>```
+      2. ```python manage.py migrate```
+   7. Creating and admin user
+      1. ```python manage.py createsuperuser```
