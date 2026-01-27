@@ -2,6 +2,8 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from main import views
 from main.forms import UserLoginForm, ResetPasswordConfirmForm, ResetPasswordForm
+from django.conf import settings
+from django.conf.urls.static import static
 
 
 urlpatterns = [
@@ -39,4 +41,7 @@ urlpatterns = [
     # path for homepage where successfull login will redirect
     path('', views.homepage, name='homepage'),
 
+
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

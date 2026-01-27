@@ -42,3 +42,4 @@ Network Traffic Visualization and Analysis Tool
       2. ```python manage.py migrate```
    7. Creating and admin user
       1. ```python manage.py createsuperuser```
+2. [Sample PCAP File](https://wiki.wireshark.org/SampleCaptures#user-content-hypertext-transport-protocol-http)

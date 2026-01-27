@@ -12,13 +12,33 @@ from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
-from main.forms import UserRegistrationForm
+from main.forms import UserRegistrationForm, PcapUploadForm
+from .models import PcapFile
 
 # Create your views here.
 
 @login_required(login_url='login')
 def homepage(request):
-    return render(request, 'homepage.html')
+    user = request.user
+    uploads = PcapFile.objects.filter(user=user).order_by('-uploaded_at')
+
+    if request.method == 'POST':
+        form = PcapUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            upload = form.save(commit=False)
+            upload.user = user
+            upload.save()
+            messages.success(request, "PCAP uploaded successfully.")
+            return redirect('homepage')
+        else:
+            messages.error(request, "Upload failed. Please try again.")
+    else:
+        form = PcapUploadForm()
+
+    return render(request, 'homepage.html', {
+        'form': form,
+        'uploads': uploads,
+    })
 
 
 def register(request):

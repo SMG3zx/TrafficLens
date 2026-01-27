@@ -145,3 +145,6 @@ EMAIL_USE_SSL = True
 
 # Default email address to use for various automated correspondence from the site managers.
 DEFAULT_FROM_EMAIL = os.getenv('TRAFFIC-LENS_EMAIL_HOST_USER')
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
