@@ -123,7 +123,11 @@
           <tbody>
           {% for u in uploads %}
             <tr>
-              <td>{{ u.file.name }}</td>
+              <td>
+                <a href="{% url 'analysis' u.id %}" style="color:#cbd5e1; text-decoration:none;">
+                  {{ u.file.name }}
+                </a>
+              </td>
               <td class="muted">{{ u.uploaded_at }}</td>
             </tr>
           {% endfor %}

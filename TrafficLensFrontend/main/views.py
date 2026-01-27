@@ -7,7 +7,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
-from django.shortcuts import render, redirect
+from django.core.paginator import Paginator
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
@@ -90,3 +91,62 @@ def activate(request, uidb64, token):
         return render(request, 'main/email_activation/activation_successful.html')
     else:
         return render(request, 'main/email_activation/activation_unsuccessful.html')
+
+@login_required(login_url='login')
+def analysis(request, pcap_id):
+    upload = get_object_or_404(PcapFile, id=pcap_id, user=request.user)
+
+    # Parse packets
+    packets_rows = []
+    error = None
+
+    try:
+        from scapy.all import rdpcap, IP, TCP, UDP
+
+        pkts = rdpcap(upload.file.path)
+
+        start_time = float(pkts[0].time) if len(pkts) else None
+
+        for i, p in enumerate(pkts, start=1):
+            ts = float(p.time)
+            rel_time = (ts - start_time) if start_time is not None else 0.0
+
+            src = dst = proto = "-"
+            if IP in p:
+                src = p[IP].src
+                dst = p[IP].dst
+                proto = "IP"
+
+                if TCP in p:
+                    proto = "TCP"
+                elif UDP in p:
+                    proto = "UDP"
+
+            length = len(p)
+            info = p.summary()
+            packet = p.show()
+            print(packet)
+
+            packets_rows.append({
+                "no": i,
+                "time": f"{rel_time:.6f}",
+                "src": src,
+                "dst": dst,
+                "proto": proto,
+                "length": length,
+                "info": info,
+            })
+
+    except Exception as e:
+        error = str(e)
+
+    # Paginate (pcaps can be huge)
+    paginator = Paginator(packets_rows, 200)  # 200 packets per page
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "analysis.html", {
+        "upload": upload,
+        "page_obj": page_obj,
+        "error": error,
+    })

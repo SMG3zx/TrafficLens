@@ -40,6 +40,7 @@ urlpatterns = [
 
     # path for homepage where successfull login will redirect
     path('', views.homepage, name='homepage'),
+    path("analysis/<int:pcap_id>/", views.analysis, name="analysis"),
 
 
 ]

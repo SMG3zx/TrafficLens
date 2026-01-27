@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Analysis</title>
+  <style>
+    body { margin: 0; font-family: system-ui, Arial, sans-serif; }
+    .app { display: flex; height: 100vh; }
+    .sidebar { width: 260px; background: #0f172a; color: white; padding: 16px; box-sizing: border-box; }
+    .sidebar h2 { margin: 0 0 16px; font-size: 18px; }
+    .nav a { display: block; color: #cbd5e1; text-decoration: none; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; }
+    .nav a:hover { background: rgba(255,255,255,0.08); color: white; }
+    .content { flex: 1; background: #0b1020; color: white; padding: 24px; box-sizing: border-box; overflow: auto; }
+    .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 16px; }
+    .table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+    .table th, .table td { text-align: left; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.12); vertical-align: top; }
+    .muted { color: #94a3b8; }
+    .pager { display: flex; gap: 10px; align-items: center; margin-top: 12px; }
+    .pager a { color: #cbd5e1; text-decoration: none; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; }
+    .pager a:hover { background: rgba(255,255,255,0.08); }
+    code { color: #e2e8f0; }
+  </style>
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <h2>TrafficLens</h2>
+    <div class="nav">
+      <a href="{% url 'homepage' %}">Dashboard</a>
+      <a href="{% url 'analysis' upload.id %}">Analysis</a>
+    </div>
+    <p class="muted" style="margin-top: 12px;">Logged in as {{ request.user.username }}</p>
+  </aside>
+
+  <main class="content">
+    <h1 style="margin-top:0;">Analysis</h1>
+    <p class="muted">
+      File: <code>{{ upload.file.name }}</code><br/>
+      Uploaded: {{ upload.uploaded_at }}
+    </p>
+
+    <div class="card">
+      <h2 style="margin-top:0;">Packets</h2>
+
+      {% if error %}
+        <p class="muted">Could not parse PCAP: <code>{{ error }}</code></p>
+      {% else %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>No.</th>
+              <th>Time (s)</th>
+              <th>Source</th>
+              <th>Destination</th>
+              <th>Protocol</th>
+              <th>Length</th>
+              <th>Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in page_obj.object_list %}
+              <tr>
+                <td>{{ p.no }}</td>
+                <td class="muted">{{ p.time }}</td>
+                <td>{{ p.src }}</td>
+                <td>{{ p.dst }}</td>
+                <td>{{ p.proto }}</td>
+                <td class="muted">{{ p.length }}</td>
+                <td class="muted">{{ p.info }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="pager">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}">Prev</a>
+          {% endif %}
+
+          <span class="muted">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          </span>
+
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">Next</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+</body>
+</html>
