@@ -1,10 +1,4 @@
-﻿TrafficLensFrontend/TrafficLens/__pycache__/
-TrafficLensFrontend/db.sqlite3
-TrafficLensFrontend/main/__pycache__/
-TrafficLensFrontend/main/migrations/
-TrafficLensFrontend/.env
-TrafficLensFrontend/Assets/
-TrafficLensFrontend/media/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
 /node_modules
@@ -47,6 +41,3 @@ yarn-error.log*
 next-env.d.ts
 
 /generated/prisma
-traffic-lens-next-js/bun.lock
-traffic-lens-next-js/dev.db
-traffic-lens-next-js/prisma/

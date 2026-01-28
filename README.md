@@ -3,7 +3,7 @@ Network Traffic Visualization and Analysis Tool
 
 ## Features 
 1. Unified Web Interface
-   1. Frontend and backend are implemented a single python codebase.
+   1. Frontend and backend are implemented a single codebase.
 2. Interactive Traffic Visualizations
    1. Real time dynamic charts and diagrams
       1. Timeline Graph of packet rates
@@ -22,24 +22,33 @@ Network Traffic Visualization and Analysis Tool
    5. Per-User Data Sandboxing
       1. Captured Data and uploaded files are sandboxed per user.
       2. Each user's PCAP uploads and analysis results are kept seperate and encrypted at rest.
-### Models
+
+## Structure
+
+### Javascript Runtime
+1. [Bun](https://bun.com/docs)
+   1. ```bun run dev```
+
+### Framework
+1. [NextJS](https://nextjs.org/docs/app)
+
+### ORM
+1. [Prisma](https://www.prisma.io/docs/guides/nextjs)
+   1. ```bunx prisma migrate dev --name init```
+   2. ```bunx prisma generate```
+
+### Database
+1. [Sqlite](https://www.prisma.io/docs/orm/overview/databases/sqlite) 
+
+### Authentication
+1. My own with heavy inspiration from -> [Better-Auth](https://www.better-auth.com/docs)
+
+### UI Library
+1. [Shadcn](https://ui.shadcn.com/)
+2. [TailwindCSS]()
+   1. ```bun install tailwindcss @tailwindcss/postcss postcss```
 
 
 ### Resources
-1. [Writing your first Django App Tutorial](https://docs.djangoproject.com/en/6.0/intro/tutorial01/)
-   1. Testing to see if django was installed correctly
-      1. ```python -m django --version```
-   2. Creating a project
-      1. ```django-admin startproject <project_name> <(opt="duplicate of the project name")directory_name>```
-   3. Django Development Server
-      1. ```python manage.py runserver```
-   4. Creating and App inside Django Project
-      1. ```python manage.py startapp <app_name>```
-   5. Creating a View
-      1. ```./<app_name>/views.py```
-   6. Migrations
-      1. ```python manage.py makemigrations <app_name>```
-      2. ```python manage.py migrate```
-   7. Creating and admin user
-      1. ```python manage.py createsuperuser```
-2. [Sample PCAP File](https://wiki.wireshark.org/SampleCaptures#user-content-hypertext-transport-protocol-http)
+
+1. [Sample PCAP File](https://wiki.wireshark.org/SampleCaptures#user-content-hypertext-transport-protocol-http) 
