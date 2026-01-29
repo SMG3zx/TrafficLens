@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ChangeEmailSchema } from "@/lib/validators";
 import { requireUser } from "@/lib/auth";
 import { verifyPassword } from "@/lib/password";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/db/client";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { sendMail } from "@/lib/mailer";
 

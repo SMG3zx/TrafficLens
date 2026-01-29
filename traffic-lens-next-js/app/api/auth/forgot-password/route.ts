@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/db/client";
 import { ForgotSchema } from "@/lib/validators";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { sendMail } from "@/lib/mailer";

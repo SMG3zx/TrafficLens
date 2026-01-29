@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ChangePasswordSchema } from "@/lib/validators";
 import { requireUser } from "@/lib/auth";
 import { verifyPassword, hashPassword } from "@/lib/password";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/db/client";
 import { clearAuthCookies } from "@/lib/cookies";
 
 export async function POST(req: Request) {

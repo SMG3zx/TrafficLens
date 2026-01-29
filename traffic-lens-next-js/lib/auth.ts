@@ -1,6 +1,11 @@
+import { findUserById } from "@/db/client";
 import { cookies } from "next/headers";
-import { prisma } from "./prisma";
-import { verifyAccessToken, verifyRefreshToken, signAccessToken, signRefreshToken } from "./jwt";
+import {
+  verifyAccessToken,
+  verifyRefreshToken,
+  signAccessToken,
+  signRefreshToken,
+} from "./jwt";
 import { setAuthCookies } from "./cookies";
 
 /**
@@ -16,7 +21,7 @@ export async function requireUser() {
   if (access) {
     try {
       const payload = await verifyAccessToken(access);
-      const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+      const user = await findUserById(payload.sub);
       if (!user) throw new Error("No user");
       return user;
     } catch {
@@ -28,10 +33,9 @@ export async function requireUser() {
   if (!refresh) throw new Error("Unauthorized");
 
   const payload = await verifyRefreshToken(refresh);
-  const user = await prisma.user.findUnique({ where: { id: payload.sub } });
+  const user = await findUserById(payload.sub);
   if (!user) throw new Error("Unauthorized");
 
-  // rotate tokens (still stateless; rotation just issues new JWTs)
   const newPayload = { sub: user.id, email: user.email };
   const newAccess = await signAccessToken(newPayload);
   const newRefresh = await signRefreshToken(newPayload);

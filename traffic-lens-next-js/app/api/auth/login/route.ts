@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/db/client";
 import { LoginSchema } from "@/lib/validators";
 import { verifyPassword } from "@/lib/password";
 import { signAccessToken, signRefreshToken } from "@/lib/jwt";
