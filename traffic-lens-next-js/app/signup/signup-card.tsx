@@ -1,60 +1,57 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import Link from "next/link"
-import { signIn } from "next-auth/react"
-import { Github, Eye, EyeOff } from "lucide-react"
+import * as React from "react";
+import Link from "next/link";
+import { Github, Eye, EyeOff } from "lucide-react";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function SignUpCard() {
-  const [showPassword, setShowPassword] = React.useState(false)
-  const [name, setName] = React.useState("")
-  const [email, setEmail] = React.useState("")
-  const [password, setPassword] = React.useState("")
-  const [accepted, setAccepted] = React.useState(false)
-  const [loading, setLoading] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [name, setName] = React.useState(""); // keep for UI, but we won't send it (unless you add it to DB/schema)
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [accepted, setAccepted] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [success, setSuccess] = React.useState<string | null>(null);
 
   async function handleSignup(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
+    setSuccess(null);
 
     if (!accepted) {
-      setError("You must accept the terms to continue.")
-      return
+      setError("You must accept the terms to continue.");
+      return;
     }
 
-    setLoading(true)
+    setLoading(true);
     try {
-      // TODO: create your user via API route
-      // POST /api/signup { name, email, password }
-      const res = await fetch("/api/signup", {
+      const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
-      })
+        // API expects only email/password
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const msg = await res.text()
-        throw new Error(msg || "Sign up failed")
+        throw new Error(data?.error || "Sign up failed");
       }
 
-      // Optional: auto-login via NextAuth credentials after signup
-      await signIn("credentials", {
-        email,
-        password,
-        callbackUrl: "/",
-      })
+      setSuccess("Account created. Check your email to verify your account.");
+      setPassword("");
     } catch (err: any) {
-      setError(err?.message ?? "Sign up failed")
+      setError(err?.message ?? "Sign up failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
@@ -80,6 +77,9 @@ export default function SignUpCard() {
                 className="h-11 rounded-xl bg-black/20 border-white/10 text-white focus-visible:ring-0 focus-visible:ring-offset-0"
                 autoComplete="name"
               />
+              <p className="text-xs text-white/45">
+                (Optional for now, we’re not saving it yet.)
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -93,6 +93,7 @@ export default function SignUpCard() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="h-11 rounded-xl bg-black/20 border-white/10 text-white focus-visible:ring-0 focus-visible:ring-offset-0"
                 autoComplete="email"
+                required
               />
             </div>
 
@@ -108,6 +109,7 @@ export default function SignUpCard() {
                   onChange={(e) => setPassword(e.target.value)}
                   className="h-11 rounded-xl bg-black/20 border-white/10 text-white pr-10 focus-visible:ring-0 focus-visible:ring-offset-0"
                   autoComplete="new-password"
+                  required
                 />
                 <button
                   type="button"
@@ -115,11 +117,7 @@ export default function SignUpCard() {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/75"
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
@@ -144,6 +142,7 @@ export default function SignUpCard() {
             </div>
 
             {error ? <p className="text-sm text-red-300">{error}</p> : null}
+            {success ? <p className="text-sm text-emerald-300">{success}</p> : null}
 
             <Button
               type="submit"
@@ -160,33 +159,35 @@ export default function SignUpCard() {
             <Separator className="flex-1 bg-white/10" />
           </div>
 
+          {/* These buttons were calling signIn() (NextAuth). If you aren't using NextAuth, disable them for now. */}
           <div className="space-y-3">
             <Button
               type="button"
               variant="secondary"
               className="w-full justify-center gap-2 rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10"
-              onClick={() => signIn("github", { callbackUrl: "/" })}
+              disabled
             >
               <Github className="h-4 w-4" />
-              Sign up with GitHub
+              Sign up with GitHub (coming soon)
             </Button>
 
             <Button
               type="button"
               variant="secondary"
               className="w-full justify-center gap-2 rounded-xl bg-white/5 text-white hover:bg-white/10 border border-white/10"
-              onClick={() => signIn("google", { callbackUrl: "/" })}
+              disabled
             >
               <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white/10 text-xs font-semibold">
                 G
               </span>
-              Sign up with Google
+              Sign up with Google (coming soon)
             </Button>
           </div>
         </CardContent>
+
+        <CardFooter className="px-6 pb-6 pt-0" />
       </Card>
 
-      {/* bottom callout + button */}
       <div className="text-center space-y-3">
         <p className="text-sm text-white/70">Already have an account?</p>
         <Button
@@ -198,5 +199,5 @@ export default function SignUpCard() {
         </Button>
       </div>
     </div>
-  )
+  );
 }

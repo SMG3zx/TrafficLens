@@ -43,7 +43,7 @@ export default function AppLayout({
 
         <Separator className="my-4 bg-white/10" />
 
-        <form action="/api/logout" method="post">
+        <form action="/api/auth/logout" method="post">
           <Button type="submit" className="w-full">
             Logout
           </Button>

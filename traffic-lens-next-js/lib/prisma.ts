@@ -1,10 +1,18 @@
-import "dotenv/config";
-import { PrismaLibSql } from "@prisma/adapter-libsql";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 
-const connectionString = `${process.env.DATABASE_URL}`;
+declare global {
+  // eslint-disable-next-line no-var
+  var prisma: PrismaClient | undefined;
+}
 
-const adapter = new PrismaLibSql({ url: connectionString });
-const prisma = new PrismaClient({ adapter });
+function makePrisma() {
+  const adapter = new PrismaBetterSqlite3({
+    url: process.env.DATABASE_URL!,
+  });
 
-export { prisma };
+  return new PrismaClient({ adapter });
+}
+
+export const prisma = global.prisma || makePrisma();
+if (process.env.NODE_ENV !== "production") global.prisma = prisma;

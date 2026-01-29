@@ -5,14 +5,20 @@ import { hashPassword } from "@/lib/password";
 import { randomToken, sha256 } from "@/lib/crypto";
 import { sendMail } from "@/lib/mailer";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   const body = await req.json().catch(() => ({}));
   const parsed = SignupSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
 
   const email = parsed.data.email.toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+  if (existing) {
+    return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+  }
 
   const passwordHash = await hashPassword(parsed.data.password);
 
