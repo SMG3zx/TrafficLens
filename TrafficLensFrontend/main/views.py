@@ -14,6 +14,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 
 from main.forms import UserRegistrationForm, PcapUploadForm
+from trafficlens_core import analyze_pcap_bytes
 from .models import PcapFile
 
 # Create your views here.
@@ -96,52 +97,16 @@ def activate(request, uidb64, token):
 def analysis(request, pcap_id):
     upload = get_object_or_404(PcapFile, id=pcap_id, user=request.user)
 
-    # Parse packets
     packets_rows = []
     error = None
 
     try:
-        from scapy.all import rdpcap, IP, TCP, UDP
+        with upload.file.open("rb") as pcap_file:
+            packets_rows = analyze_pcap_bytes(pcap_file.read())
+    except ValueError as exc:
+        error = str(exc)
 
-        pkts = rdpcap(upload.file.path)
-
-        start_time = float(pkts[0].time) if len(pkts) else None
-
-        for i, p in enumerate(pkts, start=1):
-            ts = float(p.time)
-            rel_time = (ts - start_time) if start_time is not None else 0.0
-
-            src = dst = proto = "-"
-            if IP in p:
-                src = p[IP].src
-                dst = p[IP].dst
-                proto = "IP"
-
-                if TCP in p:
-                    proto = "TCP"
-                elif UDP in p:
-                    proto = "UDP"
-
-            length = len(p)
-            info = p.summary()
-            packet = p.show()
-            print(packet)
-
-            packets_rows.append({
-                "no": i,
-                "time": f"{rel_time:.6f}",
-                "src": src,
-                "dst": dst,
-                "proto": proto,
-                "length": length,
-                "info": info,
-            })
-
-    except Exception as e:
-        error = str(e)
-
-    # Paginate (pcaps can be huge)
-    paginator = Paginator(packets_rows, 200)  # 200 packets per page
+    paginator = Paginator(packets_rows, 200)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 

@@ -1,0 +1,23 @@
+[project]
+name = "trafficlens"
+version = "0.1.0"
+description = "TrafficLens network traffic analysis core and Django frontend."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "componentize-py>=0.16.0",
+    "Django>=5.2,<6.1",
+    "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[tool.uv]
+package = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

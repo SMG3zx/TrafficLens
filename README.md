@@ -1,6 +1,19 @@
 # TrafficLens
 Network Traffic Visualization and Analysis Tool
 
+## Build strategy compatibility
+This repository now exposes a root-level Python package and `pyproject.toml` so WASM-oriented builders can recognize it as a Python project. The portable packet-analysis logic lives in [`trafficlens_core`](./trafficlens_core), while the Django UI remains under [`TrafficLensFrontend`](./TrafficLensFrontend).
+
+The core parser is intentionally pure Python and does not depend on Django or Scapy, which makes it a better fit for `componentize-py` and other WASM packaging workflows.
+
+## Development with uv
+1. Create and sync the environment:
+   1. `uv sync`
+2. Run the test suite:
+   1. `uv run pytest`
+3. Run the Django app:
+   1. `uv run python TrafficLensFrontend/manage.py runserver`
+
 ## Features 
 1. Unified Web Interface
    1. Frontend and backend are implemented a single python codebase.
