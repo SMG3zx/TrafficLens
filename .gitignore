@@ -7,3 +7,4 @@ TrafficLensFrontend/Assets/
 TrafficLensFrontend/media/
 tests/__pycache__/
 trafficlens_core/__pycache__/
+__pycache__/

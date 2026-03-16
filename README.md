@@ -6,6 +6,8 @@ This repository now exposes a root-level Python package and `pyproject.toml` so 
 
 The core parser is intentionally pure Python and does not depend on Django or Scapy, which makes it a better fit for `componentize-py` and other WASM packaging workflows.
 
+The root-level [`app.py`](./app.py) is the WASI HTTP guest entrypoint Janus can componentize. It implements `wasi:http/proxy` using the vendored [`wit`](./wit) package and generated bindings under [`trafficlens_wit`](./trafficlens_wit).
+
 ## Development with uv
 1. Create and sync the environment:
    1. `uv sync`
