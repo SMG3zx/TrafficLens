@@ -131,8 +131,13 @@ LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = 'login'
 
 # Setting up Email Backend
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('TRAFFIC-LENS_EMAIL_HOST')
+_email_host = os.getenv('TRAFFIC-LENS_EMAIL_HOST')
+EMAIL_BACKEND = (
+    'django.core.mail.backends.smtp.EmailBackend'
+    if _email_host
+    else 'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = _email_host
 EMAIL_PORT = os.getenv('TRAFFIC-LENS_EMAIL_PORT')
 
 # Email Host Email Address
