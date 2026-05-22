@@ -1,3 +1,10 @@
 from django.contrib import admin
+from .models import PcapFile
 
-# Register your models here.
+
+@admin.register(PcapFile)
+class PcapFileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'file', 'uploaded_at')
+    list_filter = ('user',)
+    ordering = ('-uploaded_at',)
+    readonly_fields = ('uploaded_at',)

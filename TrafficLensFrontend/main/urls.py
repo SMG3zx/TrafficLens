@@ -41,6 +41,11 @@ urlpatterns = [
     # path for homepage where successfull login will redirect
     path('', views.homepage, name='homepage'),
     path("analysis/<int:pcap_id>/", views.analysis, name="analysis"),
+    path("delete/<int:pcap_id>/", views.delete_pcap, name="delete_pcap"),
+
+    # guest access
+    path('guest/', views.guest_login, name='guest_login'),
+    path('guest/end/', views.guest_logout, name='guest_logout'),
 
 
 ]

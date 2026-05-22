@@ -1,10 +1,11 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Title</title>
-  </head>
-  <body>
-    <h1>You will see this if you this is unsuccessfull</h1>
-  </body>
-</html>
+{% extends "main/base_auth.html" %}
+{% block title %}Activation failed{% endblock %}
+
+{% block content %}
+<h1>Activation failed</h1>
+<p class="muted">
+  This activation link is invalid or has already been used.
+  Please register again or contact support.
+</p>
+<p><a href="{% url 'register' %}">Register</a></p>
+{% endblock %}

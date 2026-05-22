@@ -1,60 +1,60 @@
 # TrafficLens
 Network Traffic Visualization and Analysis Tool
 
-## Build strategy compatibility
-This repository now exposes a root-level Python package and `pyproject.toml` so WASM-oriented builders can recognize it as a Python project. The portable packet-analysis logic lives in [`trafficlens_core`](./trafficlens_core), while the Django UI remains under [`TrafficLensFrontend`](./TrafficLensFrontend).
+## Architecture
 
-The core parser is intentionally pure Python and does not depend on Django or Scapy, which makes it a better fit for `componentize-py` and other WASM packaging workflows.
+TrafficLens is a Django web application for uploading and analyzing PCAP files. The codebase is split into two layers:
 
-The root-level [`app.py`](./app.py) is the WASI HTTP guest entrypoint Janus can componentize. It implements `wasi:http/proxy` using the vendored [`wit`](./wit) package and generated bindings under [`trafficlens_wit`](./trafficlens_wit).
+- **[`trafficlens_core`](./trafficlens_core)** — pure Python packet analysis library. No Django or Scapy dependency. Handles Ethernet, IPv4, IPv6, ARP, TCP, UDP, ICMP, and DNS.
+- **[`TrafficLensFrontend`](./TrafficLensFrontend)** — Django web UI. User authentication (register, email activation, password reset), per-user PCAP upload, and paginated packet analysis view.
 
-## Development with uv
-1. Create and sync the environment:
-   1. `uv sync`
-2. Run the test suite:
-   1. `uv run pytest`
-3. Run the Django app:
-   1. `uv run python TrafficLensFrontend/manage.py runserver`
+## Development
 
-## Features 
-1. Unified Web Interface
-   1. Frontend and backend are implemented a single python codebase.
-2. Interactive Traffic Visualizations
-   1. Real time dynamic charts and diagrams
-      1. Timeline Graph of packet rates
-      2. Table of active flows
-         1. Source/Destinations
-         2. Ports
-         3. Protocols
-      3. Network Graph of endpoints
-   2. Chat-Like Packet Narration
-      1. Real-time textual feed translation
-         1. Ex. ARP ("Who has 192.168.1.1? Tell 192.168.1.2")
-   3. Live Capture and PCAP Import
-   4. Secure User Authentication
-      1. The app requires users to log in.
-      2. Each user's session and data are isolated.
-   5. Per-User Data Sandboxing
-      1. Captured Data and uploaded files are sandboxed per user.
-      2. Each user's PCAP uploads and analysis results are kept seperate and encrypted at rest.
-### Models
+### Setup
 
+1. Install dependencies:
+   ```
+   uv sync
+   ```
 
-### Resources
-1. [Writing your first Django App Tutorial](https://docs.djangoproject.com/en/6.0/intro/tutorial01/)
-   1. Testing to see if django was installed correctly
-      1. ```python -m django --version```
-   2. Creating a project
-      1. ```django-admin startproject <project_name> <(opt="duplicate of the project name")directory_name>```
-   3. Django Development Server
-      1. ```python manage.py runserver```
-   4. Creating and App inside Django Project
-      1. ```python manage.py startapp <app_name>```
-   5. Creating a View
-      1. ```./<app_name>/views.py```
-   6. Migrations
-      1. ```python manage.py makemigrations <app_name>```
-      2. ```python manage.py migrate```
-   7. Creating and admin user
-      1. ```python manage.py createsuperuser```
-2. [Sample PCAP File](https://wiki.wireshark.org/SampleCaptures#user-content-hypertext-transport-protocol-http)
+2. Copy the example env file and fill in values:
+   ```
+   cp TrafficLensFrontend/.env.example TrafficLensFrontend/.env
+   ```
+
+3. Run migrations:
+   ```
+   uv run python TrafficLensFrontend/manage.py migrate
+   ```
+
+4. Start the development server:
+   ```
+   uv run python TrafficLensFrontend/manage.py runserver
+   ```
+
+### Tests
+
+```
+uv run pytest
+```
+
+Django app tests:
+```
+uv run python TrafficLensFrontend/manage.py test main
+```
+
+## Features
+
+- **PCAP upload** — per-user sandboxed file storage with magic-byte validation
+- **Packet analysis** — Ethernet / IPv4 / IPv6 / ARP / TCP / UDP / ICMP / DNS parsed and displayed in a paginated table
+- **Authentication** — registration with email activation, login, password reset
+- **Admin** — Django admin interface at `/admin/` for managing users and uploads
+
+## Environment variables
+
+See [`TrafficLensFrontend/.env.example`](./TrafficLensFrontend/.env.example) for all required and optional variables.
+
+## Resources
+
+- [Django docs](https://docs.djangoproject.com/en/6.0/)
+- [Sample PCAP files](https://wiki.wireshark.org/SampleCaptures)

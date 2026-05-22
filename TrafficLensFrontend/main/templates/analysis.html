@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Analysis</title>
+  <title>Analysis — TrafficLens</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
     body { margin: 0; font-family: system-ui, Arial, sans-serif; }
     .app { display: flex; height: 100vh; }
-    .sidebar { width: 260px; background: #0f172a; color: white; padding: 16px; box-sizing: border-box; }
+    .sidebar { width: 260px; background: #0f172a; color: white; padding: 16px; display: flex; flex-direction: column; }
     .sidebar h2 { margin: 0 0 16px; font-size: 18px; }
     .nav a { display: block; color: #cbd5e1; text-decoration: none; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; }
     .nav a:hover { background: rgba(255,255,255,0.08); color: white; }
+    .sidebar-footer { margin-top: auto; }
     .content { flex: 1; background: #0b1020; color: white; padding: 24px; box-sizing: border-box; overflow: auto; }
     .card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 16px; }
     .table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
@@ -19,10 +21,39 @@
     .pager a { color: #cbd5e1; text-decoration: none; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; }
     .pager a:hover { background: rgba(255,255,255,0.08); }
     code { color: #e2e8f0; }
+
+    /* Stat cards */
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); border-radius: 12px; padding: 16px 20px; }
+    .stat-value { font-size: 28px; font-weight: 700; color: #e2e8f0; line-height: 1; margin-bottom: 4px; }
+    .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* Chart row */
+    .chart-row { display: grid; grid-template-columns: 280px 1fr; gap: 12px; margin-bottom: 16px; }
+    .chart-card { display: flex; flex-direction: column; }
+    .chart-card h3 { margin: 0 0 12px; font-size: 15px; color: #cbd5e1; }
+    .chart-wrap { display: flex; align-items: center; justify-content: center; }
+
+    .talkers-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .talkers-table th { color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; padding: 4px 8px; text-align: left; }
+    .talkers-table td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.07); color: #cbd5e1; }
+    .talkers-table tr:last-child td { border-bottom: 0; }
+    .bar-bg { background: rgba(255,255,255,0.07); border-radius: 4px; height: 6px; margin-top: 4px; }
+    .bar-fill { background: #2563eb; border-radius: 4px; height: 6px; }
+
+    /* Loading overlay */
+    #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(11,16,32,0.88); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 
 <body>
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <p style="color:#cbd5e1; margin:0; font-size:14px;">Loading page&hellip;</p>
+</div>
+
 <div class="app">
   <aside class="sidebar">
     <h2>TrafficLens</h2>
@@ -30,22 +61,99 @@
       <a href="{% url 'homepage' %}">Dashboard</a>
       <a href="{% url 'analysis' upload.id %}">Analysis</a>
     </div>
-    <p class="muted" style="margin-top: 12px;">Logged in as {{ request.user.username }}</p>
+    <div class="sidebar-footer">
+      <p class="muted" style="margin:0; font-size:13px;">
+        {% if is_guest %}Guest session{% else %}{{ request.user.username }}{% endif %}
+      </p>
+    </div>
   </aside>
 
   <main class="content">
     <h1 style="margin-top:0;">Analysis</h1>
-    <p class="muted">
-      File: <code>{{ upload.file.name }}</code><br/>
-      Uploaded: {{ upload.uploaded_at }}
+    <p class="muted" style="margin-bottom:20px;">
+      File: <code>{{ upload.file.name }}</code>&nbsp;&nbsp;
+      Uploaded: {{ upload.uploaded_at|date:"Y-m-d H:i" }}
     </p>
 
-    <div class="card">
-      <h2 style="margin-top:0;">Packets</h2>
-
-      {% if error %}
+    {% if error %}
+      <div class="card">
         <p class="muted">Could not parse PCAP: <code>{{ error }}</code></p>
-      {% else %}
+      </div>
+    {% else %}
+
+      {% if stats %}
+      <!-- Stat cards -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.total }}</div>
+          <div class="stat-label">Total Packets</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.top_proto }}</div>
+          <div class="stat-label">Top Protocol</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.unique_src }}</div>
+          <div class="stat-label">Unique Sources</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">{{ stats.unique_dst }}</div>
+          <div class="stat-label">Unique Destinations</div>
+        </div>
+      </div>
+
+      <!-- Chart row -->
+      <div class="chart-row">
+        <div class="card chart-card">
+          <h3>Protocol Distribution</h3>
+          <div class="chart-wrap">
+            <canvas id="protoChart" width="220" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <h3>Top Talkers</h3>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div>
+              <p class="muted" style="margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em;">Source IPs</p>
+              <table class="talkers-table">
+                {% for ip, count in stats.top_src %}
+                <tr>
+                  <td>
+                    {{ ip }}
+                    <div class="bar-bg">
+                      <div class="bar-fill" style="width:{{ count|floatformat:0 }}px; max-width:100%;"></div>
+                    </div>
+                  </td>
+                  <td style="text-align:right; color:#64748b;">{{ count }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </div>
+            <div>
+              <p class="muted" style="margin:0 0 8px; font-size:12px; text-transform:uppercase; letter-spacing:.05em;">Destination IPs</p>
+              <table class="talkers-table">
+                {% for ip, count in stats.top_dst %}
+                <tr>
+                  <td>
+                    {{ ip }}
+                    <div class="bar-bg">
+                      <div class="bar-fill" style="width:{{ count|floatformat:0 }}px; max-width:100%;"></div>
+                    </div>
+                  </td>
+                  <td style="text-align:right; color:#64748b;">{{ count }}</td>
+                </tr>
+                {% endfor %}
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Packet table -->
+      <div class="card">
+        <h2 style="margin-top:0;">Packets</h2>
         <table class="table">
           <thead>
             <tr>
@@ -75,20 +183,69 @@
 
         <div class="pager">
           {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}">Prev</a>
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Prev</a>
           {% endif %}
-
-          <span class="muted">
-            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-          </span>
-
+          <span class="muted">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
           {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}">Next</a>
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
           {% endif %}
         </div>
-      {% endif %}
-    </div>
+      </div>
+
+    {% endif %}
   </main>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+const CHART_COLORS = [
+  '#2563eb','#7c3aed','#059669','#d97706','#dc2626',
+  '#0891b2','#65a30d','#9333ea','#e11d48','#0d9488'
+];
+
+const chartData = {{ chart_json|safe }};
+
+if (chartData.labels && chartData.labels.length) {
+  const ctx = document.getElementById('protoChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: chartData.labels,
+        datasets: [{
+          data: chartData.values,
+          backgroundColor: CHART_COLORS.slice(0, chartData.labels.length),
+          borderWidth: 0,
+          hoverOffset: 6,
+        }]
+      },
+      options: {
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: '#94a3b8', font: { size: 12 }, padding: 10, boxWidth: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+document.querySelectorAll('.page-link').forEach(function (a) {
+  a.addEventListener('click', function () {
+    document.getElementById('loading-overlay').style.display = 'flex';
+  });
+});
+</script>
 </body>
 </html>

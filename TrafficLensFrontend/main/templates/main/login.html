@@ -1,5 +1,5 @@
 {% extends "main/base_auth.html" %}
-{% block title %}Login{% endblock %}
+{% block title %}Login — TrafficLens{% endblock %}
 
 {% block content %}
 <h1>Login</h1>
@@ -12,14 +12,43 @@
 </ul>
 {% endif %}
 
-<form method="post">
+{% if form.non_field_errors %}
+<ul class="messages">
+  {% for error in form.non_field_errors %}
+    <li class="error">{{ error }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form method="post" novalidate>
   {% csrf_token %}
-  {{ form.as_p }}
+
+  <div class="field">
+    <label for="{{ form.username.id_for_label }}">Username</label>
+    {{ form.username }}
+    {% for error in form.username.errors %}
+      <p class="field-error">{{ error }}</p>
+    {% endfor %}
+  </div>
+
+  <div class="field">
+    <label for="{{ form.password.id_for_label }}">Password</label>
+    {{ form.password }}
+    {% for error in form.password.errors %}
+      <p class="field-error">{{ error }}</p>
+    {% endfor %}
+  </div>
+
   <button type="submit">Login</button>
 </form>
 
-<p class="muted">
-  No account? <a href="{% url 'register' %}">Register</a><br>
+<p class="muted" style="margin-top:16px; text-align:center;">
+  No account? <a href="{% url 'register' %}">Register</a>
+  &nbsp;·&nbsp;
   <a href="{% url 'password_reset' %}">Forgot password?</a>
 </p>
+
+<div class="divider">or</div>
+
+<a href="{% url 'guest_login' %}" class="btn-guest">Continue as Guest</a>
 {% endblock %}

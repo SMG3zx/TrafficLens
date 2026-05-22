@@ -1,6 +1,105 @@
 {% extends "main/base_auth.html" %}
 {% block title %}Register{% endblock %}
 
+{% block extra_style %}
+<style>
+  /* ── Step indicator ── */
+  .steps {
+    display: flex;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .step-circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: #64748b;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+  }
+  .step.active .step-circle,
+  .step.done .step-circle {
+    border-color: #2563eb;
+    background: #2563eb;
+    color: white;
+  }
+  .step-label {
+    font-size: 11px;
+    color: #475569;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .step.active .step-label { color: #cbd5e1; }
+  .step.done  .step-label  { color: #60a5fa; }
+  .step-line {
+    flex: 1;
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    margin: 0 8px 18px;
+    transition: background 0.2s;
+  }
+  .step-line.done { background: #2563eb; }
+
+  /* ── Panels ── */
+  .step-panel { display: none; }
+  .step-panel.active { display: block; }
+
+  /* ── Fields ── */
+  .field { margin-top: 14px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 4px;
+  }
+  .field input {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    color: white;
+    margin-top: 0;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: #2563eb !important;
+  }
+  .field input.field-error { border-color: #ef4444 !important; }
+  .errorlist {
+    list-style: none;
+    padding: 0;
+    margin: 5px 0 0;
+    font-size: 12px;
+    color: #f87171;
+  }
+
+  /* ── Nav buttons ── */
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .btn-row button { flex: 1; margin-top: 0; }
+  #btn-back {
+    background: rgba(255,255,255,0.08);
+    color: #cbd5e1;
+  }
+  #btn-back:hover { background: rgba(255,255,255,0.14); filter: none; }
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>Create account</h1>
 
@@ -12,13 +111,171 @@
 </ul>
 {% endif %}
 
-<form method="post">
+<!-- Step indicator -->
+<div class="steps">
+  <div class="step" id="si-1">
+    <div class="step-circle">1</div>
+    <div class="step-label">Personal</div>
+  </div>
+  <div class="step-line" id="line-1"></div>
+  <div class="step" id="si-2">
+    <div class="step-circle">2</div>
+    <div class="step-label">Account</div>
+  </div>
+  <div class="step-line" id="line-2"></div>
+  <div class="step" id="si-3">
+    <div class="step-circle">3</div>
+    <div class="step-label">Password</div>
+  </div>
+</div>
+
+<form method="post" id="reg-form" novalidate>
   {% csrf_token %}
-  {{ form.as_p }}
-  <button type="submit">Register</button>
+
+  <!-- Step 1: Personal info -->
+  <div class="step-panel" id="panel-1">
+    <div class="field">
+      {{ form.first_name.label_tag }}
+      {{ form.first_name }}
+      {{ form.first_name.errors }}
+    </div>
+    <div class="field">
+      {{ form.last_name.label_tag }}
+      {{ form.last_name }}
+      {{ form.last_name.errors }}
+    </div>
+  </div>
+
+  <!-- Step 2: Account details -->
+  <div class="step-panel" id="panel-2">
+    <div class="field">
+      {{ form.username.label_tag }}
+      {{ form.username }}
+      {{ form.username.errors }}
+    </div>
+    <div class="field">
+      {{ form.email.label_tag }}
+      {{ form.email }}
+      {{ form.email.errors }}
+    </div>
+  </div>
+
+  <!-- Step 3: Password -->
+  <div class="step-panel" id="panel-3">
+    <div class="field">
+      {{ form.password1.label_tag }}
+      {{ form.password1 }}
+      {{ form.password1.errors }}
+    </div>
+    <div class="field">
+      {{ form.password2.label_tag }}
+      {{ form.password2 }}
+      {{ form.password2.errors }}
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button type="button" id="btn-back">Back</button>
+    <button type="button" id="btn-next">Next</button>
+    <button type="submit" id="btn-submit">Create account</button>
+  </div>
 </form>
 
-<p class="muted">
+<p class="muted" style="margin-top:16px;">
   Already have an account? <a href="{% url 'login' %}">Login</a>
 </p>
+
+<script>
+(function () {
+  const TOTAL = 3;
+
+  // Map each step to the field IDs it owns
+  const STEP_FIELDS = {
+    1: ['id_first_name', 'id_last_name'],
+    2: ['id_username', 'id_email'],
+    3: ['id_password1', 'id_password2'],
+  };
+
+  // After a server-side validation failure, jump to the first step that has errors
+  function firstErrorStep() {
+    for (let s = 1; s <= TOTAL; s++) {
+      for (const id of STEP_FIELDS[s]) {
+        const el = document.getElementById(id);
+        if (el && el.closest('.field').querySelector('.errorlist')) return s;
+      }
+    }
+    return 1;
+  }
+
+  let current = firstErrorStep();
+
+  function render() {
+    for (let s = 1; s <= TOTAL; s++) {
+      document.getElementById('panel-' + s).classList.toggle('active', s === current);
+
+      const si = document.getElementById('si-' + s);
+      si.classList.remove('active', 'done');
+      if (s === current) si.classList.add('active');
+      else if (s < current) si.classList.add('done');
+
+      if (s < TOTAL) {
+        document.getElementById('line-' + s).classList.toggle('done', s < current);
+      }
+    }
+    document.getElementById('btn-back').style.display   = current > 1     ? '' : 'none';
+    document.getElementById('btn-next').style.display   = current < TOTAL ? '' : 'none';
+    document.getElementById('btn-submit').style.display = current === TOTAL ? '' : 'none';
+  }
+
+  function validateStep(s) {
+    let ok = true;
+    STEP_FIELDS[s].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('field-error');
+      if (!el.value.trim()) {
+        el.classList.add('field-error');
+        ok = false;
+      }
+    });
+
+    if (s === 2) {
+      const email = document.getElementById('id_email');
+      if (email && email.value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+        email.classList.add('field-error');
+        ok = false;
+      }
+    }
+
+    if (s === 3) {
+      const p1 = document.getElementById('id_password1');
+      const p2 = document.getElementById('id_password2');
+      if (p1 && p2 && p1.value && p2.value && p1.value !== p2.value) {
+        p2.classList.add('field-error');
+        ok = false;
+      }
+    }
+
+    return ok;
+  }
+
+  document.getElementById('btn-next').addEventListener('click', function () {
+    if (validateStep(current) && current < TOTAL) {
+      current++;
+      render();
+    }
+  });
+
+  document.getElementById('btn-back').addEventListener('click', function () {
+    if (current > 1) { current--; render(); }
+  });
+
+  // Clear field-error highlight on input
+  document.getElementById('reg-form').addEventListener('input', function (e) {
+    if (e.target.tagName === 'INPUT') e.target.classList.remove('field-error');
+  });
+
+  render();
+})();
+</script>
 {% endblock %}
