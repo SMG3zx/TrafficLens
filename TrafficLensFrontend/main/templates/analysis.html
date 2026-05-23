@@ -160,6 +160,33 @@
   {% endif %}
 
   <div class="card">
+    <div style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center;">
+      <form method="get" style="display:flex; gap:8px; flex:1; min-width:0; flex-wrap:wrap;">
+        <input type="hidden" name="per_page" value="{{ per_page }}" />
+        <input type="text" name="q" value="{{ q }}"
+               placeholder="Search IP, protocol, info&hellip;"
+               style="flex:1; min-width:140px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#e2e8f0; border-radius:8px; padding:7px 12px; font-size:14px; outline:none;" />
+        <select name="proto"
+                style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); color:#e2e8f0; border-radius:8px; padding:7px 12px; font-size:14px; cursor:pointer;">
+          <option value="">All protocols</option>
+          {% for proto in proto_list %}
+            <option value="{{ proto }}"{% if proto == proto_filter %} selected{% endif %}>{{ proto }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit"
+                style="background:#2563eb; color:white; border:0; border-radius:8px; padding:7px 14px; font-size:14px; cursor:pointer; white-space:nowrap;">Filter</button>
+        {% if q or proto_filter %}
+          <a href="?per_page={{ per_page }}"
+             style="color:#94a3b8; font-size:14px; display:flex; align-items:center; text-decoration:none; white-space:nowrap; padding:0 4px;">Clear</a>
+        {% endif %}
+      </form>
+      {% if q or proto_filter %}
+        <span style="font-size:13px; color:#64748b; white-space:nowrap;">
+          {{ filtered_count }} of {{ total_packets }} packets
+        </span>
+      {% endif %}
+    </div>
+
     <h2 style="margin-top:0;">Packets</h2>
     <div class="table-scroll">
       <table class="table">
@@ -196,18 +223,18 @@
       <div class="pager-perpage">
         <button class="pager-perpage-btn" id="per-page-trigger" type="button">{{ per_page }}</button>
         <div class="pager-perpage-menu" id="per-page-menu">
-          <a href="?per_page=25&amp;page=1"  class="page-link{% if per_page == 25  %} selected{% endif %}">25</a>
-          <a href="?per_page=50&amp;page=1"  class="page-link{% if per_page == 50  %} selected{% endif %}">50</a>
-          <a href="?per_page=100&amp;page=1" class="page-link{% if per_page == 100 %} selected{% endif %}">100</a>
-          <a href="?per_page=200&amp;page=1" class="page-link{% if per_page == 200 %} selected{% endif %}">200</a>
+          <a href="?per_page=25&amp;page=1{{ filter_qs }}"  class="page-link{% if per_page == 25  %} selected{% endif %}">25</a>
+          <a href="?per_page=50&amp;page=1{{ filter_qs }}"  class="page-link{% if per_page == 50  %} selected{% endif %}">50</a>
+          <a href="?per_page=100&amp;page=1{{ filter_qs }}" class="page-link{% if per_page == 100 %} selected{% endif %}">100</a>
+          <a href="?per_page=200&amp;page=1{{ filter_qs }}" class="page-link{% if per_page == 200 %} selected{% endif %}">200</a>
         </div>
       </div>
       <span class="muted" style="font-size:13px;">Per page</span>
 
       <div class="pager-nav">
         {% if page_obj.has_previous %}
-          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page=1" title="First">&laquo;</a>
-          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ page_obj.previous_page_number }}" title="Previous">&lsaquo;</a>
+          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page=1{{ filter_qs }}" title="First">&laquo;</a>
+          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ page_obj.previous_page_number }}{{ filter_qs }}" title="Previous">&lsaquo;</a>
         {% else %}
           <span class="pager-btn disabled">&laquo;</span>
           <span class="pager-btn disabled">&lsaquo;</span>
@@ -217,13 +244,13 @@
           {% if p == page_obj.number %}
             <span class="pager-btn active">{{ p }}</span>
           {% else %}
-            <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ p }}">{{ p }}</a>
+            <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ p }}{{ filter_qs }}">{{ p }}</a>
           {% endif %}
         {% endfor %}
 
         {% if page_obj.has_next %}
-          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ page_obj.next_page_number }}" title="Next">&rsaquo;</a>
-          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ page_obj.paginator.num_pages }}" title="Last">&raquo;</a>
+          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ page_obj.next_page_number }}{{ filter_qs }}" title="Next">&rsaquo;</a>
+          <a class="pager-btn page-link" href="?per_page={{ per_page }}&amp;page={{ page_obj.paginator.num_pages }}{{ filter_qs }}" title="Last">&raquo;</a>
         {% else %}
           <span class="pager-btn disabled">&rsaquo;</span>
           <span class="pager-btn disabled">&raquo;</span>

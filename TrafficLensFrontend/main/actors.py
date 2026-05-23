@@ -75,9 +75,11 @@ class CleanupActor(pykka.ThreadingActor):
             from main.models import PcapFile
 
             active_keys = set(Session.objects.values_list('session_key', flat=True))
+            from main.views import _delete_packet_cache
             stale = PcapFile.objects.filter(user=None).exclude(session_key__in=active_keys)
             count = stale.count()
             for f in stale:
+                _delete_packet_cache(f)
                 f.file.delete(save=False)
                 f.delete()
             if count:

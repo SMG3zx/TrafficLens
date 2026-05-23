@@ -118,13 +118,13 @@
 
 <form id="upload-form" method="post" enctype="multipart/form-data">
   {% csrf_token %}
-  <input type="file" name="file" id="file-input" accept=".pcap" style="display:none;" />
+  <input type="file" name="file" id="file-input" accept=".pcap,.pcapng" style="display:none;" />
 
   <div class="drop-zone" id="drop-zone">
     <div class="drop-icon">&#8679;</div>
     <p class="drop-title">Drop your PCAP file here</p>
     <p class="drop-sub">
-      or <a href="#" id="browse-link">browse files</a> &nbsp;·&nbsp; .pcap up to 50 MB
+      or <a href="#" id="browse-link">browse files</a> &nbsp;·&nbsp; .pcap / .pcapng up to 50 MB
     </p>
     <div class="drop-selected" id="drop-selected"></div>
     {% if form.file.errors %}

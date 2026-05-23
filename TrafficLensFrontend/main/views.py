@@ -1,11 +1,14 @@
 import json
 from collections import Counter
+from urllib.parse import urlencode
 
 import structlog
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.sites.shortcuts import get_current_site
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.core.mail import EmailMessage
 from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
@@ -29,6 +32,36 @@ _PROTO_COLORS = {
 _FALLBACK_COLORS = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626']
 
 _ALLOWED_PER_PAGE = {25, 50, 100, 200}
+
+# ── Packet file-cache helpers ──────────────────────────────────────────────────
+
+
+def _packets_cache_path(upload: 'PcapFile') -> str:
+    return upload.file.name + '.packets.json'
+
+
+def _write_packet_cache(upload: 'PcapFile', packets: list) -> None:
+    path = _packets_cache_path(upload)
+    if default_storage.exists(path):
+        default_storage.delete(path)
+    default_storage.save(path, ContentFile(json.dumps(packets).encode('utf-8')))
+    log.debug('pcap.cache.written', pcap_id=upload.pk, path=path, packet_count=len(packets))
+
+
+def _read_packet_cache(upload: 'PcapFile') -> list | None:
+    path = _packets_cache_path(upload)
+    if not default_storage.exists(path):
+        return None
+    with default_storage.open(path) as f:
+        return json.loads(f.read())
+
+
+def _delete_packet_cache(upload: 'PcapFile') -> None:
+    path = _packets_cache_path(upload)
+    if default_storage.exists(path):
+        default_storage.delete(path)
+        log.debug('pcap.cache.deleted', pcap_id=upload.pk, path=path)
+
 
 # ── Access helpers ─────────────────────────────────────────────────────────────
 
@@ -81,11 +114,14 @@ def _persist_analysis(upload: PcapFile, packets: list) -> None:
         }
         for i, (proto, count) in enumerate(proto_counts.most_common(5))
     ]
-    upload.packets_cache = packets
-    upload.save(update_fields=[
-        'total_packets', 'top_protocol', 'unique_src_ips',
-        'unique_dst_ips', 'capture_duration', 'protocol_bars', 'packets_cache',
-    ])
+    _write_packet_cache(upload, packets)
+
+    fields = ['total_packets', 'top_protocol', 'unique_src_ips', 'unique_dst_ips',
+              'capture_duration', 'protocol_bars']
+    if upload.packets_cache is not None:
+        upload.packets_cache = None
+        fields.append('packets_cache')
+    upload.save(update_fields=fields)
     log.info(
         'pcap.stats.saved',
         pcap_id=upload.pk,
@@ -98,10 +134,21 @@ def _persist_analysis(upload: PcapFile, packets: list) -> None:
 
 
 def _get_or_cache_packets(upload: PcapFile) -> tuple[list, str | None]:
-    """Return cached packets (or parse from file and cache synchronously)."""
+    """Return cached packets, migrating old DB cache to file on first access."""
+    packets = _read_packet_cache(upload)
+    if packets is not None:
+        log.debug('pcap.cache_hit', pcap_id=upload.pk, cached_packets=len(packets))
+        return packets, None
+
+    # Migrate legacy DB-cached records to file on first access.
     if upload.packets_cache is not None:
-        log.debug('pcap.cache_hit', pcap_id=upload.pk, cached_packets=len(upload.packets_cache))
-        return upload.packets_cache, None
+        log.info('pcap.cache_migrate', pcap_id=upload.pk,
+                 packet_count=len(upload.packets_cache))
+        packets = upload.packets_cache
+        _write_packet_cache(upload, packets)
+        upload.packets_cache = None
+        upload.save(update_fields=['packets_cache'])
+        return packets, None
 
     log.info('pcap.cache_miss', pcap_id=upload.pk, filename=upload.file.name)
     try:
@@ -180,6 +227,7 @@ def guest_logout(request):
     deleted = 0
     if request.session.get('is_guest') and request.session.session_key:
         for upload in PcapFile.objects.filter(session_key=request.session.session_key):
+            _delete_packet_cache(upload)
             upload.file.delete(save=False)
             upload.delete()
             deleted += 1
@@ -317,6 +365,7 @@ def delete_pcap(request, pcap_id):
     upload = _get_upload(request, pcap_id)
     if request.method == 'POST':
         log.info('pcap.deleted', pcap_id=upload.pk)
+        _delete_packet_cache(upload)
         upload.file.delete(save=False)
         upload.delete()
         messages.success(request, 'Upload deleted.')
@@ -333,13 +382,45 @@ def analysis(request, pcap_id):
         pcap_id=pcap_id,
         user=request.user.username if request.user.is_authenticated else 'guest',
     )
-    packets, error = _get_or_cache_packets(upload)
+    all_packets, error = _get_or_cache_packets(upload)
 
     stats: dict = {}
     chart_json = '{}'
+    proto_list: list[str] = []
 
-    if packets and not error:
-        stats, chart_json = _build_stats(packets)
+    if all_packets and not error:
+        stats, chart_json = _build_stats(all_packets)
+        proto_list = sorted({str(p['proto']) for p in all_packets})
+
+    # Apply search / protocol filter
+    q            = request.GET.get('q', '').strip()
+    proto_filter = request.GET.get('proto', '').strip()
+    packets      = all_packets
+
+    if q:
+        q_lower = q.lower()
+        packets = [
+            p for p in packets
+            if q_lower in str(p.get('src', '')).lower()
+            or q_lower in str(p.get('dst', '')).lower()
+            or q_lower in str(p.get('proto', '')).lower()
+            or q_lower in str(p.get('info', '')).lower()
+        ]
+        log.debug('analysis.filter.text', pcap_id=pcap_id, q=q,
+                  matched=len(packets), total=len(all_packets))
+
+    if proto_filter:
+        packets = [p for p in packets if str(p.get('proto')) == proto_filter]
+        log.debug('analysis.filter.proto', pcap_id=pcap_id, proto=proto_filter,
+                  matched=len(packets))
+
+    # Build a stable query-string fragment so filter survives pagination
+    _filter_parts = {}
+    if q:
+        _filter_parts['q'] = q
+    if proto_filter:
+        _filter_parts['proto'] = proto_filter
+    filter_qs = ('&' + urlencode(_filter_parts)) if _filter_parts else ''
 
     try:
         per_page = int(request.GET.get('per_page', 25))
@@ -350,9 +431,9 @@ def analysis(request, pcap_id):
         per_page = 25
 
     paginator = Paginator(packets, per_page)
-    page_obj = paginator.get_page(request.GET.get('page'))
+    page_obj  = paginator.get_page(request.GET.get('page'))
 
-    current = page_obj.number
+    current     = page_obj.number
     total_pages = paginator.num_pages
     page_window = list(range(max(1, current - 4), min(total_pages + 1, current + 5)))
 
@@ -368,5 +449,11 @@ def analysis(request, pcap_id):
             'stats': stats,
             'chart_json': chart_json,
             'is_guest': not request.user.is_authenticated and request.session.get('is_guest', False),
+            'q': q,
+            'proto_filter': proto_filter,
+            'proto_list': proto_list,
+            'total_packets': len(all_packets),
+            'filtered_count': len(packets),
+            'filter_qs': filter_qs,
         },
     )

@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from .models import PcapFile
 
-_PCAP_MAGIC = {b'\xd4\xc3\xb2\xa1', b'\xa1\xb2\xc3\xd4'}
+_PCAP_MAGIC = {b'\xd4\xc3\xb2\xa1', b'\xa1\xb2\xc3\xd4', b'\x0a\x0d\x0d\x0a'}
 _MAX_UPLOAD_MB = 50
 
 # uncomment this if you want to change the class/design of the login form
@@ -47,5 +47,5 @@ class PcapUploadForm(ModelForm):
         magic = f.read(4)
         f.seek(0)
         if magic not in _PCAP_MAGIC:
-            raise ValidationError("Invalid file. Please upload a valid PCAP (.pcap) file.")
+            raise ValidationError("Invalid file. Please upload a valid PCAP (.pcap or .pcapng) file.")
         return f
