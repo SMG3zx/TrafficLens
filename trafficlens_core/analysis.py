@@ -4,6 +4,10 @@ from dataclasses import asdict, dataclass
 import ipaddress
 import struct
 
+import structlog
+
+log = structlog.get_logger(__name__)
+
 PCAP_MAGIC_TO_ENDIAN = {
     b"\xd4\xc3\xb2\xa1": "<",
     b"\xa1\xb2\xc3\xd4": ">",
@@ -12,33 +16,33 @@ PCAP_MAGIC_TO_ENDIAN = {
 LINKTYPE_ETHERNET = 1
 
 ETHERTYPE_IPV4 = 0x0800
-ETHERTYPE_ARP  = 0x0806
+ETHERTYPE_ARP = 0x0806
 ETHERTYPE_VLAN = 0x8100
 ETHERTYPE_IPV6 = 0x86DD
 
 IP_PROTOCOL_NAMES: dict[int, str] = {
-    1:   "ICMP",
-    6:   "TCP",
-    17:  "UDP",
-    47:  "GRE",
-    58:  "ICMPv6",
-    89:  "OSPF",
+    1: "ICMP",
+    6: "TCP",
+    17: "UDP",
+    47: "GRE",
+    58: "ICMPv6",
+    89: "OSPF",
     132: "SCTP",
 }
 
 ICMP_TYPE_NAMES: dict[int, str] = {
-    0:  "Echo Reply",
-    3:  "Destination Unreachable",
-    5:  "Redirect",
-    8:  "Echo Request",
+    0: "Echo Reply",
+    3: "Destination Unreachable",
+    5: "Redirect",
+    8: "Echo Request",
     11: "Time Exceeded",
     12: "Parameter Problem",
 }
 
 ICMPV6_TYPE_NAMES: dict[int, str] = {
-    1:   "Destination Unreachable",
-    2:   "Packet Too Big",
-    3:   "Time Exceeded",
+    1: "Destination Unreachable",
+    2: "Packet Too Big",
+    3: "Time Exceeded",
     128: "Echo Request",
     129: "Echo Reply",
     133: "Router Solicitation",
@@ -63,11 +67,15 @@ class PacketSummary:
 
 
 def analyze_pcap_bytes(data: bytes) -> list[dict[str, int | str]]:
+    log.debug('pcap.parse.start', size_bytes=len(data))
+
     if len(data) < 24:
+        log.warning('pcap.parse.too_small', size_bytes=len(data))
         raise ValueError("PCAP file is too small to contain a valid global header.")
 
     endian = PCAP_MAGIC_TO_ENDIAN.get(data[:4])
     if endian is None:
+        log.warning('pcap.parse.bad_magic', magic=data[:4].hex())
         raise ValueError(
             "Unsupported PCAP magic number. Only classic PCAP is supported."
         )
@@ -75,7 +83,11 @@ def analyze_pcap_bytes(data: bytes) -> list[dict[str, int | str]]:
     _magic, _major, _minor, _thiszone, _sigfigs, _snaplen, network = struct.unpack(
         f"{endian}IHHIIII", data[:24]
     )
+    endian_label = 'little' if endian == '<' else 'big'
+    log.debug('pcap.parse.header', endian=endian_label, link_type=network, version=f"{_major}.{_minor}")
+
     if network != LINKTYPE_ETHERNET:
+        log.warning('pcap.parse.unsupported_link_type', link_type=network)
         raise ValueError(
             f"Unsupported PCAP link type {network}. Only Ethernet captures are supported."
         )
@@ -92,6 +104,7 @@ def analyze_pcap_bytes(data: bytes) -> list[dict[str, int | str]]:
         offset += 16
 
         if offset + incl_len > len(data):
+            log.warning('pcap.parse.record_overflow', packet_no=packet_no + 1, offset=offset, incl_len=incl_len)
             raise ValueError("PCAP packet record exceeds file length.")
 
         frame = data[offset : offset + incl_len]
@@ -115,13 +128,17 @@ def analyze_pcap_bytes(data: bytes) -> list[dict[str, int | str]]:
         summary.update(_parse_frame(frame))
         packets.append(summary)
 
+    duration = float(packets[-1]['time']) if packets else 0.0
+    log.info('pcap.parse.complete', packet_count=len(packets), duration_s=round(duration, 3), size_bytes=len(data))
     return packets
 
 
 # ── Ethernet ──────────────────────────────────────────────────────────────────
 
+
 def _parse_frame(frame: bytes) -> dict[str, str]:
     if len(frame) < 14:
+        log.debug('frame.truncated', frame_len=len(frame))
         return {"proto": "TRUNCATED", "info": "Truncated Ethernet frame"}
 
     ether_type = struct.unpack("!H", frame[12:14])[0]
@@ -151,8 +168,10 @@ def _dispatch_ethertype(ether_type: int, payload: bytes) -> dict[str, str]:
 
 # ── ARP ───────────────────────────────────────────────────────────────────────
 
+
 def _parse_arp(packet: bytes) -> dict[str, str]:
     if len(packet) < 28:
+        log.debug('arp.truncated', packet_len=len(packet))
         return {"proto": "ARP", "info": "Truncated ARP packet"}
 
     oper = struct.unpack("!H", packet[6:8])[0]
@@ -171,14 +190,17 @@ def _parse_arp(packet: bytes) -> dict[str, str]:
 
 # ── IPv4 ──────────────────────────────────────────────────────────────────────
 
+
 def _parse_ipv4(packet: bytes) -> dict[str, str]:
     if len(packet) < 20:
+        log.debug('ipv4.truncated', packet_len=len(packet))
         return {"proto": "IPv4", "info": "Truncated IPv4 packet"}
 
     version_ihl = packet[0]
     version = version_ihl >> 4
     ihl = (version_ihl & 0x0F) * 4
     if version != 4 or len(packet) < ihl:
+        log.debug('ipv4.invalid_header', version=version, ihl=ihl, packet_len=len(packet))
         return {"proto": "IPv4", "info": "Invalid IPv4 header"}
 
     proto_num = packet[9]
@@ -193,8 +215,10 @@ def _parse_ipv4(packet: bytes) -> dict[str, str]:
 
 # ── IPv6 ──────────────────────────────────────────────────────────────────────
 
+
 def _parse_ipv6(packet: bytes) -> dict[str, str]:
     if len(packet) < 40:
+        log.debug('ipv6.truncated', packet_len=len(packet))
         return {"proto": "IPv6", "info": "Truncated IPv6 packet"}
 
     _vtcfl, _payload_len, next_header, _hop = struct.unpack("!IHBB", packet[:8])
@@ -208,6 +232,7 @@ def _parse_ipv6(packet: bytes) -> dict[str, str]:
 
 
 # ── Transport-layer dispatch ───────────────────────────────────────────────────
+
 
 def _parse_transport(
     proto_num: int, src: str, dst: str, payload: bytes, *, ipv6: bool
@@ -238,6 +263,7 @@ def _parse_transport(
 
 # ── ICMP ──────────────────────────────────────────────────────────────────────
 
+
 def _icmp_info(payload: bytes, names: dict[int, str]) -> str:
     if len(payload) < 2:
         return "ICMP (truncated)"
@@ -247,6 +273,7 @@ def _icmp_info(payload: bytes, names: dict[int, str]) -> str:
 
 
 # ── DNS ───────────────────────────────────────────────────────────────────────
+
 
 def _dns_info(udp_payload: bytes) -> str | None:
     """Parse enough of a DNS message to produce a one-line summary."""

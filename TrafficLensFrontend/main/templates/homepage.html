@@ -1,299 +1,221 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Dashboard — TrafficLens</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, Arial, sans-serif; }
-    .app { display: flex; height: 100vh; }
+{% extends "main/base_app.html" %}
 
-    /* ── Sidebar ── */
-    .sidebar { width: 260px; background: #0f172a; color: white; padding: 16px; display: flex; flex-direction: column; flex-shrink: 0; }
-    .sidebar h2 { margin: 0 0 16px; font-size: 18px; }
-    .nav a { display: block; color: #cbd5e1; text-decoration: none; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; }
-    .nav a:hover { background: rgba(255,255,255,0.08); color: white; }
-    .sidebar-footer { margin-top: auto; }
+{% block title %}Dashboard — TrafficLens{% endblock %}
 
-    /* ── Content ── */
-    .content { flex: 1; background: #0b1020; color: white; padding: 24px 28px; overflow: auto; }
+{% block extra_style %}
+  .content { padding: 24px 28px; }
 
-    /* ── Alerts ── */
-    .messages { list-style: none; padding: 0; margin: 0 0 16px; }
-    .messages li { padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
-    .messages li.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); }
-    .messages li.error   { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.35); }
-    .guest-banner { background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.30); border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 14px; color: #fde047; }
-    .guest-banner a { color: #fde047; text-decoration: underline; }
+  .messages { list-style: none; padding: 0; margin: 0 0 16px; }
+  .messages li { padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
+  .messages li.success { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); }
+  .messages li.error   { background: rgba(239,68,68,0.15);  border: 1px solid rgba(239,68,68,0.35); }
+  .guest-banner { background: rgba(234,179,8,0.12); border: 1px solid rgba(234,179,8,0.30); border-radius: 10px; padding: 10px 14px; margin-bottom: 20px; font-size: 14px; color: #fde047; }
+  .guest-banner a { color: #fde047; text-decoration: underline; }
 
-    /* ── Buttons ── */
-    .btn        { background: #2563eb; color: white; border: 0; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 14px; }
-    .btn:hover  { filter: brightness(1.08); }
-    .btn-outline { background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 14px; width: 100%; }
-    .btn-outline:hover { color: white; border-color: rgba(255,255,255,0.35); }
+  .btn        { background: #2563eb; color: white; border: 0; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+  .btn:hover  { filter: brightness(1.08); }
+  .btn-outline { background: transparent; color: #94a3b8; border: 1px solid rgba(255,255,255,0.15); padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 14px; width: 100%; }
+  .btn-outline:hover { color: white; border-color: rgba(255,255,255,0.35); }
 
-    /* ── Drop zone ── */
-    .drop-zone {
-      border: 2px dashed rgba(255,255,255,0.18);
-      border-radius: 14px;
-      padding: 40px 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-      user-select: none;
-      max-width: 700px;
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: #2563eb;
-      background: rgba(37,99,235,0.08);
-    }
-    .drop-zone .drop-icon {
-      font-size: 40px;
-      margin-bottom: 10px;
-      line-height: 1;
-      color: #475569;
-      transition: color 0.2s;
-    }
-    .drop-zone:hover .drop-icon, .drop-zone.drag-over .drop-icon { color: #2563eb; }
-    .drop-zone .drop-title { font-size: 16px; font-weight: 600; color: #e2e8f0; margin: 0 0 6px; }
-    .drop-zone .drop-sub   { font-size: 13px; color: #64748b; margin: 0; }
-    .drop-zone .drop-sub a { color: #2563eb; text-decoration: none; }
-    .drop-zone .drop-sub a:hover { text-decoration: underline; }
-    .drop-zone .drop-selected {
-      margin-top: 14px;
-      background: rgba(37,99,235,0.15);
-      border: 1px solid rgba(37,99,235,0.35);
-      border-radius: 8px;
-      padding: 8px 14px;
-      font-size: 13px;
-      color: #93c5fd;
-      display: none;
-    }
-    .drop-zone .drop-error {
-      margin-top: 14px;
-      color: #f87171;
-      font-size: 13px;
-      display: none;
-    }
+  .drop-zone { border: 2px dashed rgba(255,255,255,0.18); border-radius: 14px; padding: 40px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; user-select: none; max-width: 700px; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #2563eb; background: rgba(37,99,235,0.08); }
+  .drop-zone .drop-icon { font-size: 40px; margin-bottom: 10px; line-height: 1; color: #475569; transition: color 0.2s; }
+  .drop-zone:hover .drop-icon, .drop-zone.drag-over .drop-icon { color: #2563eb; }
+  .drop-zone .drop-title { font-size: 16px; font-weight: 600; color: #e2e8f0; margin: 0 0 6px; }
+  .drop-zone .drop-sub   { font-size: 13px; color: #64748b; margin: 0; }
+  .drop-zone .drop-sub a { color: #2563eb; text-decoration: none; }
+  .drop-zone .drop-sub a:hover { text-decoration: underline; }
+  .drop-zone .drop-selected { margin-top: 14px; background: rgba(37,99,235,0.15); border: 1px solid rgba(37,99,235,0.35); border-radius: 8px; padding: 8px 14px; font-size: 13px; color: #93c5fd; display: none; }
+  .drop-zone .drop-error { margin-top: 14px; color: #f87171; font-size: 13px; display: none; }
 
-    /* ── PCAP card grid ── */
-    .pcap-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-      gap: 14px;
-      margin-top: 14px;
-    }
-    .pcap-card {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(255,255,255,0.09);
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      transition: border-color 0.15s, background 0.15s;
-      cursor: pointer;
-      text-decoration: none;
-      color: inherit;
-    }
-    .pcap-card:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.07); }
+  .pcap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; margin-top: 14px; }
+  .pcap-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: border-color 0.15s, background 0.15s; cursor: pointer; text-decoration: none; color: inherit; }
+  .pcap-card:hover { border-color: rgba(255,255,255,0.22); background: rgba(255,255,255,0.07); }
 
-    .pcap-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-    .pcap-name { font-size: 14px; font-weight: 600; color: #e2e8f0; word-break: break-all; line-height: 1.3; }
-    .pcap-date { font-size: 11px; color: #475569; margin-top: 3px; }
-    .proto-badge {
-      flex-shrink: 0;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(37,99,235,0.25);
-      color: #93c5fd;
-      letter-spacing: 0.03em;
-    }
+  .pcap-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+  .pcap-name { font-size: 14px; font-weight: 600; color: #e2e8f0; word-break: break-all; line-height: 1.3; }
+  .pcap-date { font-size: 11px; color: #475569; margin-top: 3px; }
+  .proto-badge { flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: rgba(37,99,235,0.25); color: #93c5fd; letter-spacing: 0.03em; }
 
-    .pcap-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-    .stat-chip { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 7px 10px; }
-    .stat-chip .val { font-size: 17px; font-weight: 700; color: #e2e8f0; }
-    .stat-chip .lbl { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+  .pcap-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .stat-chip { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 8px; padding: 7px 10px; }
+  .stat-chip .val { font-size: 17px; font-weight: 700; color: #e2e8f0; }
+  .stat-chip .lbl { font-size: 10px; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
 
-    .pcap-bars { display: flex; flex-direction: column; gap: 5px; }
-    .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-    .bar-label { width: 52px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
-    .bar-fill  { height: 100%; border-radius: 3px; }
-    .bar-pct   { width: 30px; text-align: right; color: #475569; font-size: 11px; }
+  .pcap-bars { display: flex; flex-direction: column; gap: 5px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .bar-label { width: 52px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 5px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; }
+  .bar-fill  { height: 100%; border-radius: 3px; }
+  .bar-pct   { width: 30px; text-align: right; color: #475569; font-size: 11px; }
 
-    .pcap-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 10px; margin-top: 2px; }
-    .btn-analyze { font-size: 13px; color: #2563eb; font-weight: 600; text-decoration: none; }
-    .btn-analyze:hover { color: #60a5fa; }
-    .btn-del { background: transparent; border: 1px solid rgba(220,38,38,0.35); color: #f87171; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
-    .btn-del:hover { background: rgba(220,38,38,0.15); }
+  .pcap-card-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 10px; margin-top: 2px; }
+  .btn-analyze { font-size: 13px; color: #2563eb; font-weight: 600; text-decoration: none; }
+  .btn-analyze:hover { color: #60a5fa; }
+  .btn-del { background: transparent; border: 1px solid rgba(220,38,38,0.35); color: #f87171; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 12px; }
+  .btn-del:hover { background: rgba(220,38,38,0.15); }
 
-    .empty-state { color: #475569; font-size: 14px; margin-top: 12px; padding: 32px; text-align: center; border: 1px dashed rgba(255,255,255,0.08); border-radius: 12px; max-width: 700px; }
+  .empty-state { color: #475569; font-size: 14px; margin-top: 12px; padding: 32px; text-align: center; border: 1px dashed rgba(255,255,255,0.08); border-radius: 12px; max-width: 700px; }
 
-    /* ── Loading overlay ── */
-    #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(11,16,32,0.90); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
-    .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loading-msg { color: #cbd5e1; margin: 0; font-size: 14px; }
-    .muted { color: #94a3b8; }
-  </style>
-</head>
+  #loading-msg { color: #cbd5e1; margin: 0; font-size: 14px; }
 
-<body>
-<div id="loading-overlay">
-  <div class="spinner"></div>
-  <p id="loading-msg">Uploading and analyzing&hellip;</p>
+  @media (max-width: 768px) {
+    .content { padding: 16px; }
+    .drop-zone { max-width: 100%; padding: 32px 16px; }
+    .pcap-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .content { padding: 12px; }
+    .stat-chip .val { font-size: 14px; }
+  }
+{% endblock %}
+
+{% block overlay_message %}<p id="loading-msg">Uploading and analyzing&hellip;</p>{% endblock %}
+
+{% block sidebar_nav %}
+  <a href="{% url 'homepage' %}">Dashboard</a>
+{% endblock %}
+
+{% block sidebar_footer %}
+  <hr style="border:0; border-top:1px solid rgba(255,255,255,0.12); margin:0 0 12px;" />
+  {% if is_guest %}
+    <p class="muted" style="margin:0 0 10px; font-size:13px;">Guest session</p>
+    <form method="post" action="{% url 'guest_logout' %}">
+      {% csrf_token %}
+      <button class="btn-outline" type="submit">End Guest Session</button>
+    </form>
+  {% else %}
+    <p class="muted" style="margin:0 0 10px; font-size:13px;">{{ request.user.username }}</p>
+    <form method="post" action="{% url 'logout' %}">
+      {% csrf_token %}
+      <button class="btn" type="submit" style="width:100%;">Logout</button>
+    </form>
+  {% endif %}
+{% endblock %}
+
+{% block bfcache_extra %}
+  var msg = document.getElementById('loading-msg');
+  if (msg) msg.textContent = 'Uploading and analyzing…';
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-top:0; margin-bottom:6px;">Dashboard</h1>
+
+{% if is_guest %}
+<div class="guest-banner">
+  Browsing as a guest — files are deleted when your session ends.
+  <a href="{% url 'login' %}">Log in</a> or <a href="{% url 'register' %}">create an account</a> to keep uploads.
 </div>
+{% endif %}
 
-<div class="app">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <h2>TrafficLens</h2>
-    <div class="nav">
-      <a href="{% url 'homepage' %}">Dashboard</a>
-    </div>
-    <div class="sidebar-footer">
-      <hr style="border:0; border-top:1px solid rgba(255,255,255,0.12); margin:0 0 12px;" />
-      {% if is_guest %}
-        <p class="muted" style="margin:0 0 10px; font-size:13px;">Guest session</p>
-        <form method="post" action="{% url 'guest_logout' %}">
-          {% csrf_token %}
-          <button class="btn-outline" type="submit">End Guest Session</button>
-        </form>
-      {% else %}
-        <p class="muted" style="margin:0 0 10px; font-size:13px;">{{ request.user.username }}</p>
-        <form method="post" action="{% url 'logout' %}">
-          {% csrf_token %}
-          <button class="btn" type="submit" style="width:100%;">Logout</button>
-        </form>
+{% if messages %}
+<ul class="messages">
+  {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form id="upload-form" method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <input type="file" name="file" id="file-input" accept=".pcap" style="display:none;" />
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">&#8679;</div>
+    <p class="drop-title">Drop your PCAP file here</p>
+    <p class="drop-sub">
+      or <a href="#" id="browse-link">browse files</a> &nbsp;·&nbsp; .pcap up to 50 MB
+    </p>
+    <div class="drop-selected" id="drop-selected"></div>
+    {% if form.file.errors %}
+      {% for error in form.file.errors %}
+        <div class="drop-error" style="display:block;">{{ error }}</div>
+      {% endfor %}
+    {% endif %}
+  </div>
+</form>
+
+<h2 style="margin: 28px 0 0; font-size: 18px;">Recent Uploads</h2>
+
+{% if uploads %}
+<div class="pcap-grid">
+  {% for u in uploads %}
+  <div class="pcap-card" onclick="navigateTo('{% url 'analysis' u.id %}')">
+
+    <div class="pcap-card-header">
+      <div>
+        <div class="pcap-name">{{ u.file.name|slice:"6:" }}</div>
+        <div class="pcap-date">{{ u.uploaded_at|date:"M j, Y · H:i" }}</div>
+      </div>
+      {% if u.top_protocol %}
+        <span class="proto-badge">{{ u.top_protocol }}</span>
       {% endif %}
     </div>
-  </aside>
 
-  <!-- Main content -->
-  <main class="content">
-    <h1 style="margin-top:0; margin-bottom:6px;">Dashboard</h1>
-
-    {% if is_guest %}
-    <div class="guest-banner">
-      Browsing as a guest — files are deleted when your session ends.
-      <a href="{% url 'login' %}">Log in</a> or <a href="{% url 'register' %}">create an account</a> to keep uploads.
-    </div>
-    {% endif %}
-
-    {% if messages %}
-    <ul class="messages">
-      {% for message in messages %}
-        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
-      {% endfor %}
-    </ul>
-    {% endif %}
-
-    <!-- Upload -->
-    <form id="upload-form" method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      <input type="file" name="file" id="file-input" accept=".pcap" style="display:none;" />
-
-      <div class="drop-zone" id="drop-zone">
-        <div class="drop-icon">&#8679;</div>
-        <p class="drop-title">Drop your PCAP file here</p>
-        <p class="drop-sub">
-          or <a href="#" id="browse-link">browse files</a> &nbsp;·&nbsp; .pcap up to 50 MB
-        </p>
-        <div class="drop-selected" id="drop-selected"></div>
-        {% if form.file.errors %}
-          {% for error in form.file.errors %}
-            <div class="drop-error" style="display:block;">{{ error }}</div>
-          {% endfor %}
-        {% endif %}
+    {% if u.total_packets %}
+    <div class="pcap-stats">
+      <div class="stat-chip">
+        <div class="val">{{ u.total_packets|filesizeformat|slice:"-1" }}{% if u.total_packets >= 1000000 %}M{% elif u.total_packets >= 1000 %}K{% endif %}</div>
+        <div class="lbl">Packets</div>
       </div>
-    </form>
-
-    <!-- Recent uploads -->
-    <h2 style="margin: 28px 0 0; font-size: 18px;">Recent Uploads</h2>
-
-    {% if uploads %}
-    <div class="pcap-grid">
-      {% for u in uploads %}
-      <div class="pcap-card" onclick="navigateTo('{% url 'analysis' u.id %}')">
-
-        <div class="pcap-card-header">
-          <div>
-            <div class="pcap-name">{{ u.file.name|slice:"6:" }}</div>
-            <div class="pcap-date">{{ u.uploaded_at|date:"M j, Y · H:i" }}</div>
-          </div>
-          {% if u.top_protocol %}
-            <span class="proto-badge">{{ u.top_protocol }}</span>
-          {% endif %}
+      <div class="stat-chip">
+        <div class="val">{{ u.duration_display }}</div>
+        <div class="lbl">Duration</div>
+      </div>
+      <div class="stat-chip">
+        <div class="val">
+          {% if u.unique_src_ips and u.unique_dst_ips %}
+            {{ u.unique_src_ips|add:u.unique_dst_ips }}
+          {% else %}—{% endif %}
         </div>
+        <div class="lbl">Unique IPs</div>
+      </div>
+    </div>
 
-        {% if u.total_packets %}
-        <div class="pcap-stats">
-          <div class="stat-chip">
-            <div class="val">{{ u.total_packets|filesizeformat|slice:"-1" }}{% if u.total_packets >= 1000000 %}M{% elif u.total_packets >= 1000 %}K{% endif %}</div>
-            <div class="lbl">Packets</div>
-          </div>
-          <div class="stat-chip">
-            <div class="val">{{ u.duration_display }}</div>
-            <div class="lbl">Duration</div>
-          </div>
-          <div class="stat-chip">
-            <div class="val">
-              {% if u.unique_src_ips and u.unique_dst_ips %}
-                {{ u.unique_src_ips|add:u.unique_dst_ips }}
-              {% else %}—{% endif %}
-            </div>
-            <div class="lbl">Unique IPs</div>
-          </div>
+    {% if u.protocol_bars %}
+    <div class="pcap-bars">
+      {% for bar in u.protocol_bars %}
+      <div class="bar-row">
+        <span class="bar-label">{{ bar.name }}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{{ bar.pct }}%; background:{{ bar.color }};"></div>
         </div>
-
-        {% if u.protocol_bars %}
-        <div class="pcap-bars">
-          {% for bar in u.protocol_bars %}
-          <div class="bar-row">
-            <span class="bar-label">{{ bar.name }}</span>
-            <div class="bar-track">
-              <div class="bar-fill" style="width:{{ bar.pct }}%; background:{{ bar.color }};"></div>
-            </div>
-            <span class="bar-pct">{{ bar.pct }}%</span>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-
-        {% else %}
-        <p class="muted" style="margin:0; font-size:13px;">{{ u.size_display }} &nbsp;·&nbsp; No analysis data</p>
-        {% endif %}
-
-        <div class="pcap-card-footer">
-          <a class="btn-analyze" href="{% url 'analysis' u.id %}">Analyze &rsaquo;</a>
-          <form method="post" action="{% url 'delete_pcap' u.id %}"
-                onsubmit="event.stopPropagation(); return confirm('Delete {{ u.file.name|slice:'6:' }}?')">
-            {% csrf_token %}
-            <button type="submit" class="btn-del" onclick="event.stopPropagation()">Delete</button>
-          </form>
-        </div>
+        <span class="bar-pct">{{ bar.pct }}%</span>
       </div>
       {% endfor %}
     </div>
+    {% endif %}
 
     {% else %}
-    <div class="empty-state">No uploads yet. Drop a PCAP file above to get started.</div>
+    <p class="muted" style="margin:0; font-size:13px;">{{ u.size_display }} &nbsp;·&nbsp; No analysis data</p>
     {% endif %}
 
-  </main>
+    <div class="pcap-card-footer">
+      <a class="btn-analyze" href="{% url 'analysis' u.id %}">Analyze &rsaquo;</a>
+      <form method="post" action="{% url 'delete_pcap' u.id %}"
+            onsubmit="event.stopPropagation(); return confirm('Delete {{ u.file.name|slice:'6:' }}?')">
+        {% csrf_token %}
+        <button type="submit" class="btn-del" onclick="event.stopPropagation()">Delete</button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 
+{% else %}
+<div class="empty-state">No uploads yet. Drop a PCAP file above to get started.</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_script %}
 <script>
 (function () {
-  const form      = document.getElementById('upload-form');
-  const dropZone  = document.getElementById('drop-zone');
-  const fileInput = document.getElementById('file-input');
+  const form       = document.getElementById('upload-form');
+  const dropZone   = document.getElementById('drop-zone');
+  const fileInput  = document.getElementById('file-input');
   const browseLink = document.getElementById('browse-link');
-  const selected  = document.getElementById('drop-selected');
-  const overlay   = document.getElementById('loading-overlay');
+  const selected   = document.getElementById('drop-selected');
+  const overlay    = document.getElementById('loading-overlay');
 
   browseLink.addEventListener('click', function (e) {
     e.preventDefault();
@@ -349,15 +271,6 @@
     overlay.style.display = 'flex';
     window.location.href = url;
   };
-
-  // When the browser restores this page from bfcache (back button), hide the overlay.
-  window.addEventListener('pageshow', function (e) {
-    if (e.persisted) {
-      overlay.style.display = 'none';
-      document.getElementById('loading-msg').textContent = 'Uploading and analyzing…';
-    }
-  });
 })();
 </script>
-</body>
-</html>
+{% endblock %}

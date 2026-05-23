@@ -1,5 +1,8 @@
+import structlog
 from django.conf import settings
 from django.db import models
+
+log = structlog.get_logger(__name__)
 
 
 class PcapFile(models.Model):
@@ -22,6 +25,8 @@ class PcapFile(models.Model):
     capture_duration = models.FloatField(null=True, blank=True)
     # List of {name, count, pct, color} dicts for the top-5 protocol bars
     protocol_bars = models.JSONField(null=True, blank=True)
+    # Full parsed packet list cached so the analysis view skips re-parsing
+    packets_cache = models.JSONField(null=True, blank=True)
 
     def __str__(self) -> str:
         owner = self.user.username if self.user_id else f"guest:{self.session_key}"
@@ -32,6 +37,7 @@ class PcapFile(models.Model):
         try:
             size = self.file.size
         except Exception:
+            log.warning('pcap.file.size_unavailable', pcap_id=self.pk, filename=self.file.name)
             return '—'
         if size < 1024:
             return f'{size} B'

@@ -1,3 +1,5 @@
 componentize-py>=0.16.0
 Django>=5.2,<6.1
+pykka>=4.0
 python-dotenv>=1.0.1
+structlog>=24.0

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}TrafficLens{% endblock %}</title>
 
   <style>
@@ -42,7 +43,7 @@
     }
 
     .card {
-      width: 420px;
+      width: min(420px, 100%);
       background: rgba(255,255,255,0.06);
       border: 1px solid rgba(255,255,255,0.12);
       border-radius: 14px;
@@ -137,8 +138,17 @@
       height: 1px;
       background: rgba(255,255,255,0.10);
     }
+    @media (max-width: 640px) {
+      .app { flex-direction: column; height: auto; min-height: 100vh; }
+      .sidebar { width: 100%; flex-direction: row; align-items: center; padding: 12px 16px; }
+      .sidebar h2 { margin: 0; font-size: 16px; }
+      .nav { display: flex; gap: 4px; margin-left: 16px; }
+      .nav a { padding: 6px 10px; margin: 0; }
+      .content { padding: 20px 16px; align-items: flex-start; }
+      .card { padding: 20px; border-radius: 12px; }
+    }
+    {% block extra_style %}{% endblock %}
   </style>
-  {% block extra_style %}{% endblock %}
 </head>
 
 <body>

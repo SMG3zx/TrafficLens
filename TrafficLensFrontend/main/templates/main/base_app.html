@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}TrafficLens{% endblock %}</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, Arial, sans-serif; }
+    .app { display: flex; height: 100vh; }
+
+    .sidebar { width: 260px; background: #0f172a; color: white; padding: 16px; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.25s ease; }
+    .sidebar h2 { margin: 0 0 16px; font-size: 18px; }
+    .nav a { display: block; color: #cbd5e1; text-decoration: none; padding: 10px 12px; border-radius: 8px; margin-bottom: 6px; }
+    .nav a:hover { background: rgba(255,255,255,0.08); color: white; }
+    .sidebar-footer { margin-top: auto; }
+
+    .mobile-bar { display: none; position: sticky; top: 0; z-index: 50; background: #0f172a; height: 52px; padding: 0 16px; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+    .mobile-logo { color: white; font-size: 16px; font-weight: 700; }
+    .hamburger { background: none; border: none; color: #cbd5e1; font-size: 24px; cursor: pointer; padding: 4px 6px; line-height: 1; }
+    .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
+
+    .content { flex: 1; background: #0b1020; color: white; padding: 24px; overflow: auto; }
+    .muted { color: #94a3b8; }
+
+    #loading-overlay { display: none; position: fixed; inset: 0; background: rgba(11,16,32,0.90); z-index: 100; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+    .spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.15); border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 768px) {
+      .mobile-bar { display: flex; }
+      .app { flex-direction: column; height: auto; min-height: 100vh; }
+      .sidebar { position: fixed; top: 0; left: 0; height: 100vh; z-index: 50; transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-backdrop.open { display: block; }
+      .content { padding: 16px; }
+    }
+
+    @media (max-width: 480px) { .content { padding: 12px; } }
+
+    {% block extra_style %}{% endblock %}
+  </style>
+</head>
+
+<body>
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  {% block overlay_message %}<p style="color:#cbd5e1; margin:0; font-size:14px;">Loading&hellip;</p>{% endblock %}
+</div>
+
+<header class="mobile-bar">
+  <span class="mobile-logo">TrafficLens</span>
+  <button class="hamburger" id="menu-toggle" aria-label="Open navigation">&#9776;</button>
+</header>
+<div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <h2>TrafficLens</h2>
+    <div class="nav">{% block sidebar_nav %}{% endblock %}</div>
+    <div class="sidebar-footer">
+      {% block sidebar_footer %}
+      <p class="muted" style="margin:0; font-size:13px;">
+        {% if is_guest %}Guest session{% else %}{{ request.user.username }}{% endif %}
+      </p>
+      {% endblock %}
+    </div>
+  </aside>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<script>
+(function () {
+  var menuToggle = document.getElementById('menu-toggle');
+  var sidebar    = document.getElementById('sidebar');
+  var backdrop   = document.getElementById('sidebar-backdrop');
+  if (menuToggle) {
+    menuToggle.addEventListener('click', function () {
+      sidebar.classList.toggle('open');
+      backdrop.classList.toggle('open');
+    });
+    backdrop.addEventListener('click', function () {
+      sidebar.classList.remove('open');
+      backdrop.classList.remove('open');
+    });
+  }
+})();
+
+window.addEventListener('pageshow', function (e) {
+  if (e.persisted) {
+    document.getElementById('loading-overlay').style.display = 'none';
+    {% block bfcache_extra %}{% endblock %}
+  }
+});
+</script>
+{% block extra_script %}{% endblock %}
+</body>
+</html>
